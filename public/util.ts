@@ -1,5 +1,5 @@
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-type InputTag = "input" | "textarea";
+type InputTag = "input" | "textarea" | "json";
 type Field = InputTag | { [key: string]: Field };
 type Fields = Record<string, Field>;
 
@@ -119,10 +119,18 @@ async function request(method: HttpMethod, endpoint: string, params?: unknown) {
 function fieldsToHtml(fields: Record<string, Field>, indent = 0, prefix = ""): string {
   return Object.entries(fields)
     .map(([name, tag]) => {
+<<<<<<< HEAD
       return `
         <div class="field" style="margin-left: ${indent}px">
           <label>${name}:
           ${typeof tag === "string" ? `<${tag} name="${prefix}${name}"></${tag}>` : fieldsToHtml(tag, indent + 10, prefix + name + ".")}
+=======
+      const htmlTag = tag === "json" ? "textarea" : tag;
+      return `
+        <div class="field" style="margin-left: ${indent}px">
+          <label>${name}:
+          ${typeof tag === "string" ? `<${htmlTag} name="${prefix}${name}"></${htmlTag}>` : fieldsToHtml(tag, indent + 10, prefix + name + ".")}
+>>>>>>> template/main
           </label>
         </div>`;
     })
@@ -146,7 +154,11 @@ function getHtmlOperations() {
 function prefixedRecordIntoObject(record: Record<string, string>) {
   const obj: any = {}; // eslint-disable-line
   for (const [key, value] of Object.entries(record)) {
+<<<<<<< HEAD
     if (!value) {
+=======
+    if (value === undefined || value === null || value === "") {
+>>>>>>> template/main
       continue;
     }
     const keys = key.split(".");
@@ -175,6 +187,23 @@ async function submitEventHandler(e: Event) {
     return param;
   });
 
+<<<<<<< HEAD
+=======
+  const op = operations.find((op) => op.endpoint === $endpoint && op.method === $method);
+  const pairs = Object.entries(reqData);
+  for (const [key, val] of pairs) {
+    if (val === "") {
+      delete reqData[key];
+      continue;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const type = key.split(".").reduce((obj, key) => obj[key], op?.fields as any);
+    if (type === "json") {
+      reqData[key] = JSON.parse(val as string);
+    }
+  }
+
+>>>>>>> template/main
   const data = prefixedRecordIntoObject(reqData as Record<string, string>);
 
   updateResponse("", "Loading...");
