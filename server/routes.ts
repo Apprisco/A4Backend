@@ -5,6 +5,7 @@ import { Router, getExpressRouter } from "./framework/router";
 import { Caption, Comment, Friend, Message, Post, Profile, SpeechDet, SpeechGen, User, WebSession } from "./app";
 import { CommentDoc } from "./concepts/comment";
 import { PostDoc } from "./concepts/post";
+import { ProfileDoc } from "./concepts/profile";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
@@ -13,7 +14,6 @@ class Routes {
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
     Message.getProfileByUser();
-    Comment.getProfileByUser();
     Caption.getProfileByUser();
     SpeechGen.getProfileByUser();
     SpeechDet.getProfileByUser();
@@ -179,7 +179,21 @@ class Routes {
     await Comment.isOwner(user, _id);
     return await Comment.delete(_id);
   }
-  
+  @Router.patch("/profiles")
+  async updateProfile(session: WebSessionDoc, update:Partial<ProfileDoc>)
+  {
+    const user=WebSession.getUser(session);
+    return await Profile.update(user, update);
+  }
+
+  @Router.get("/profiles")
+  async getProfile(session: WebSessionDoc, owner?: string)
+  {
+    const id = owner ? (await User.getUserByUsername(owner))._id : WebSession.getUser(session);
+    return await Profile.getProfile(id);
+  }
+
+
 }
 async function isFriendWithPostOwner(user: ObjectId, id: ObjectId)
 {

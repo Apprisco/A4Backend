@@ -23,7 +23,7 @@ export default class ProfileConcept {
     return {msg: "Profile updated!"};
   }
 
-  async getProfileByUser(user: ObjectId)
+  async getProfile(user: ObjectId)
   {
     const profile=await this.profiles.readOne({user});
     if(!profile) throw new NotFoundError("Profile for ${user} doesn't exist!");
