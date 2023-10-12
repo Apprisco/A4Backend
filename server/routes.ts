@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { Router, getExpressRouter } from "./framework/router";
 
 import { Caption, Comment, Friend, Message, Post, Profile, SpeechDet, SpeechGen, User, WebSession } from "./app";
+import { CommentDoc } from "./concepts/comment";
 import { PostDoc } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
@@ -146,6 +147,43 @@ class Routes {
     const fromId = (await User.getUserByUsername(from))._id;
     return await Friend.rejectRequest(fromId, user);
   }
-}
+  @Router.get("/comments")
+  async getCommentsByUser(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    return await Comment.getCommentsByUser(user);
+  }
 
+  @Router.get("/posts/:_target/comments")
+  async getCommentsByPost(session: WebSessionDoc, _target: ObjectId) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    return await Comment.getCommentsByTarget(_target);
+  }
+  @Router.post("/posts/:_target/comments")
+  async createComment(session: WebSessionDoc, _target: ObjectId, text: string) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    return await Comment.create(user, _target, text);
+  }
+  @Router.patch("/posts/:_target/comments/:_id")
+  async updateComment(session: WebSessionDoc, _target: ObjectId, _id: ObjectId, update: Partial<CommentDoc>) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    await Comment.isOwner(user, _id);
+    return await Comment.update(_id, update);
+  }
+  @Router.delete("/posts/:_target/comments:_id")
+  async deleteComment(session: WebSessionDoc, _target: ObjectId, _id: ObjectId) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    await Comment.isOwner(user, _id);
+    return await Comment.delete(_id);
+  }
+  
+}
+async function isFriendWithPostOwner(user: ObjectId, id: ObjectId)
+{
+  const post = (await Post.getPosts({ _id: id }))[0];
+  if (post.author!==user) await Friend.isFriends(post.author, user);
+}
 export default getExpressRouter(new Routes());

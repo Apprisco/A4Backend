@@ -37,6 +37,10 @@ export default class CommentConcept {
     const comments = await this.comments.readMany({target},{sort:{dateUpdated:-1}});
     return comments;
   }
+  async getCommentsByUser(user: ObjectId) {
+    const comments = await this.comments.readMany({user},{sort:{dateUpdated:-1}});
+    return comments;
+  }
 
   private sanitizeUpdate(update: Partial<CommentDoc>) {
     // Make sure the update cannot change the user.
