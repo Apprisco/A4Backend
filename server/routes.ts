@@ -13,10 +13,6 @@ import Responses from "./responses";
 class Routes {
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
-    Message.getProfileByUser();
-    Caption.getProfileByUser();
-    SpeechGen.getProfileByUser();
-    SpeechDet.getProfileByUser();
     const user = WebSession.getUser(session);
     return await User.getUserById(user);
 
@@ -179,6 +175,24 @@ class Routes {
     await Comment.isOwner(user, _id);
     return await Comment.delete(_id);
   }
+  @Router.get("/posts/:_target/captions")
+  async createCaption(session: WebSessionDoc, _target: ObjectId, _image:string) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    return await Caption.create(_target,_image);
+  }
+  @Router.get("/posts/:_target/captions")
+  async regenerateCaption(session: WebSessionDoc, _target: ObjectId, _image:string) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    return await Caption.regenerate(_target,_image);
+  }
+  @Router.get("/posts/:_target/captions")
+  async getCaptionsByPost(session: WebSessionDoc, _target: ObjectId,_image:string) {
+    const user = WebSession.getUser(session);
+    await isFriendWithPostOwner(user,_target);
+    return await Caption.getCaptionsByPost(_target,_image);
+  }
   @Router.patch("/profiles")
   async updateProfile(session: WebSessionDoc, update:Partial<ProfileDoc>)
   {
@@ -193,6 +207,46 @@ class Routes {
     return await Profile.getProfile(id);
   }
 
+  @Router.get("/messages")
+  async getMessages(session: WebSessionDoc) {
+    const user = WebSession.getUser(session);
+    return await Message.getMessagesByUser(user);
+  }
+
+  @Router.get("/messages/:username")
+  async getMessagesBetween(session: WebSessionDoc,_target:ObjectId) {
+    const user= WebSession.getUser(session);
+    return await Message.getMessagesBetween(user,_target);
+  }
+
+  @Router.post("/messages/:to")
+  async sendMessage(session: WebSessionDoc, _target: string, text: string) {
+    const user = WebSession.getUser(session);
+    const target = (await User.getUserByUsername(_target))._id;
+    await Friend.isFriends(user,target);
+    return await Message.create(user,target,text);
+  }
+  
+  @Router.get("/speechGen")
+  async createGen(session: WebSessionDoc,text:string) {
+    const user = WebSession.getUser(session);
+    return await SpeechGen.create(user,text);
+  }
+  @Router.get("/speechGen")
+  async getGen(session: WebSessionDoc,text:string) {
+    const user = WebSession.getUser(session);
+    return await SpeechGen.getSpeechGeneration(user,text);
+  }
+  @Router.get("/speechDet")
+  async createDet(session: WebSessionDoc,audio:string) {
+    const user = WebSession.getUser(session);
+    return await SpeechDet.create(user,audio);
+  }
+  @Router.get("/speechDet")
+  async getDet(session: WebSessionDoc,audio:string) {
+    const user = WebSession.getUser(session);
+    return await SpeechDet.getSpeechDetection(user,audio);
+  }
 
 }
 async function isFriendWithPostOwner(user: ObjectId, id: ObjectId)

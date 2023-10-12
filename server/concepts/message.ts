@@ -2,43 +2,50 @@ import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
 import { NotAllowedError, NotFoundError } from "./errors";
 
-export interface CommentDoc extends BaseDoc {
+export interface MessageDoc extends BaseDoc {
   user: ObjectId;
   target: ObjectId;
   text: string;
 }
 
-export default class CommentConcept {
-  public readonly comments = new DocCollection<CommentDoc>("profiles");
+export default class MessageConcept {
+  public readonly messages = new DocCollection<MessageDoc>("messages");
 
   async create(user: ObjectId, target: ObjectId, text:string) {
-    return { msg: "Comment created!", comment: this.comments.createOne({ user: user,target:target,text:text }) };
+    return { msg: "Message created!", comment: this.messages.createOne({ user: user,target:target,text:text }) };
   }
 
-  async update(user: ObjectId, update: Partial<CommentDoc>) {
+  async update(user: ObjectId, update: Partial<MessageDoc>) {
     this.sanitizeUpdate(update);
-    await this.comments.updateOne({ user }, update);
-    return { msg: "Profile successfully updated!" };
+    await this.messages.updateOne({ user }, update);
+    return { msg: "Message successfully updated!" };
   }
   
   async delete(_id: ObjectId) {
-    await this.comments.deleteOne({_id});
-    return { msg: "Comment deleted!" };
+    await this.messages.deleteOne({_id});
+    return { msg: "Message deleted!" };
   }
   async isOwner(user:ObjectId,_id: ObjectId) {
-    const comment = await this.comments.readOne({_id});
-    if(!comment) throw new NotFoundError("Comment does not exist!");
+    const comment = await this.messages.readOne({_id});
+    if(!comment) throw new NotFoundError("Message does not exist!");
     if (comment.user!==user) {
       throw new CommentNotOwnedError(user,_id);
     }
   }
 
-  async getCommentsByTarget(target: ObjectId) {
-    const comments = await this.comments.readMany({target},{sort:{dateUpdated:-1}});
+  async getMessagesByTarget(target: ObjectId) {
+    const comments = await this.messages.readMany({target:target},{sort:{dateUpdated:-1}});
     return comments;
   }
-
-  private sanitizeUpdate(update: Partial<CommentDoc>) {
+  async getMessagesByUser(user: ObjectId) {
+    const comments = await this.messages.readMany({user:user},{sort:{dateUpdated:-1}});
+    return comments;
+  }
+  async getMessagesBetween(user:ObjectId,target:ObjectId)
+  {
+    return await this.messages.readMany({$or:[{user:user,target:target},{target:target,user:user}]},{sort:{dateCreated:-1}});
+  }
+  private sanitizeUpdate(update: Partial<MessageDoc>) {
     // Make sure the update cannot change the user.
     const allowedUpdates = ["text"];
     for (const key in update) {

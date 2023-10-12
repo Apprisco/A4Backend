@@ -9,7 +9,7 @@ export interface CommentDoc extends BaseDoc {
 }
 
 export default class CommentConcept {
-  public readonly comments = new DocCollection<CommentDoc>("profiles");
+  public readonly comments = new DocCollection<CommentDoc>("comments");
 
   async create(user: ObjectId, target: ObjectId, text:string) {
     return { msg: "Comment created!", comment: this.comments.createOne({ user: user,target:target,text:text }) };
@@ -18,7 +18,7 @@ export default class CommentConcept {
   async update(user: ObjectId, update: Partial<CommentDoc>) {
     this.sanitizeUpdate(update);
     await this.comments.updateOne({ user }, update);
-    return { msg: "Profile successfully updated!" };
+    return { msg: "Comment successfully updated!" };
   }
   
   async delete(_id: ObjectId) {
@@ -34,11 +34,11 @@ export default class CommentConcept {
   }
 
   async getCommentsByTarget(target: ObjectId) {
-    const comments = await this.comments.readMany({target},{sort:{dateUpdated:-1}});
+    const comments = await this.comments.readMany({target:target},{sort:{dateUpdated:-1}});
     return comments;
   }
   async getCommentsByUser(user: ObjectId) {
-    const comments = await this.comments.readMany({user},{sort:{dateUpdated:-1}});
+    const comments = await this.comments.readMany({user:user},{sort:{dateUpdated:-1}});
     return comments;
   }
 

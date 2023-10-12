@@ -1,58 +1,26 @@
 import { ObjectId } from "mongodb";
 import DocCollection, { BaseDoc } from "../framework/doc";
-import { NotAllowedError, NotFoundError } from "./errors";
 
-export interface CommentDoc extends BaseDoc {
+export interface SpeechGenDoc extends BaseDoc {
   user: ObjectId;
-  target: ObjectId;
+  audio: string;
   text: string;
 }
 
-export default class CommentConcept {
-  public readonly comments = new DocCollection<CommentDoc>("profiles");
+export default class SpeechGenConcept {
+  public readonly speechGens = new DocCollection<SpeechGenDoc>("speechdet");
 
-  async create(user: ObjectId, target: ObjectId, text:string) {
-    return { msg: "Comment created!", comment: this.comments.createOne({ user: user,target:target,text:text }) };
+  async create(user: ObjectId, text: string) {
+    return { msg: "Speech Generation created!", comment: this.speechGens.createOne({ user: user,text:text,audio:await this.generateAudio(text) }) };
   }
-
-  async update(user: ObjectId, update: Partial<CommentDoc>) {
-    this.sanitizeUpdate(update);
-    await this.comments.updateOne({ user }, update);
-    return { msg: "Profile successfully updated!" };
+  private async generateAudio(text:string)
+  {
+    //TODO: Find text to audio clip library url
+    return text;
   }
-  
-  async delete(_id: ObjectId) {
-    await this.comments.deleteOne({_id});
-    return { msg: "Comment deleted!" };
-  }
-  async isOwner(user:ObjectId,_id: ObjectId) {
-    const comment = await this.comments.readOne({_id});
-    if(!comment) throw new NotFoundError("Comment does not exist!");
-    if (comment.user!==user) {
-      throw new CommentNotOwnedError(user,_id);
-    }
-  }
-
-  async getCommentsByTarget(target: ObjectId) {
-    const comments = await this.comments.readMany({target},{sort:{dateUpdated:-1}});
-    return comments;
-  }
-
-  private sanitizeUpdate(update: Partial<CommentDoc>) {
-    // Make sure the update cannot change the user.
-    const allowedUpdates = ["text"];
-    for (const key in update) {
-      if (!allowedUpdates.includes(key)) {
-        throw new NotAllowedError(`Cannot update '${key}' field!`);
-      }
-    }
-  }
-}
-export class CommentNotOwnedError extends NotAllowedError {
-  constructor(
-    public readonly user: ObjectId,
-    public readonly _id: ObjectId,
-  ) {
-    super("{0} is not the owner of comment {1}!", user, _id);
+  async getSpeechGeneration(user: ObjectId,text:string)
+  {
+    const speechGen = await this.speechGens.readOne({user:user,text:text});
+    return speechGen;
   }
 }
