@@ -2,8 +2,8 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Friend, Post, User, WebSession } from "./app";
-import { PostDoc, PostOptions } from "./concepts/post";
+import { Caption, Comment, Friend, Message, Post, Profile, SpeechDet, SpeechGen, User, WebSession } from "./app";
+import { PostDoc } from "./concepts/post";
 import { UserDoc } from "./concepts/user";
 import { WebSessionDoc } from "./concepts/websession";
 import Responses from "./responses";
@@ -11,8 +11,14 @@ import Responses from "./responses";
 class Routes {
   @Router.get("/session")
   async getSessionUser(session: WebSessionDoc) {
+    Message.getProfileByUser();
+    Comment.getProfileByUser();
+    Caption.getProfileByUser();
+    SpeechGen.getProfileByUser();
+    SpeechDet.getProfileByUser();
     const user = WebSession.getUser(session);
     return await User.getUserById(user);
+
   }
 
   @Router.get("/users")
@@ -28,7 +34,9 @@ class Routes {
   @Router.post("/users")
   async createUser(session: WebSessionDoc, username: string, password: string) {
     WebSession.isLoggedOut(session);
-    return await User.create(username, password);
+    const user= await User.create(username, password);
+    if(user.user) await Profile.create(user.user._id);
+    return user;
   }
 
   @Router.patch("/users")
@@ -58,21 +66,23 @@ class Routes {
   }
 
   @Router.get("/posts")
-  async getPosts(author?: string) {
+  async getPosts(session: WebSessionDoc,author?: string) {
+    const user = WebSession.getUser(session),friends=await Friend.getFriends(user);
     let posts;
+    //display all posts of friends if no author is specified, otherwise make sure only friends can see posts
     if (author) {
-      const id = (await User.getUserByUsername(author))._id;
-      posts = await Post.getByAuthor(id);
-    } else {
-      posts = await Post.getPosts({});
+      const authorId = (await User.getUserByUsername(author))._id;
+      if(authorId!==user) await Friend.isFriends(user,authorId);
+      posts = await Post.getByAuthor(authorId);
     }
+    else posts = await Post.getPosts({author:{$in:friends}});
     return Responses.posts(posts);
   }
 
   @Router.post("/posts")
-  async createPost(session: WebSessionDoc, content: string, options?: PostOptions) {
+  async createPost(session: WebSessionDoc, text: string, image: string) {
     const user = WebSession.getUser(session);
-    const created = await Post.create(user, content, options);
+    const created = await Post.create(user, text, image);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
