@@ -214,9 +214,10 @@ class Routes {
   }
 
   @Router.get("/messages/:username")
-  async getMessagesBetween(session: WebSessionDoc,_target:ObjectId) {
+  async getMessagesBetween(session: WebSessionDoc,username:string) {
     const user= WebSession.getUser(session);
-    return await Message.getMessagesBetween(user,_target);
+    const target = await User.getUserByUsername(username);
+    return await Message.getMessagesBetween(user,target._id);
   }
 
   @Router.post("/messages/:to")
@@ -247,7 +248,6 @@ class Routes {
     const user = WebSession.getUser(session);
     return await SpeechDet.getSpeechDetection(user,audio);
   }
-
 }
 async function isFriendWithPostOwner(user: ObjectId, id: ObjectId)
 {

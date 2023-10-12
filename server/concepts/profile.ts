@@ -13,7 +13,7 @@ export default class ProfileConcept {
   public readonly profiles = new DocCollection<ProfileDoc>("profiles");
   async create(user: ObjectId)
   {
-    return {msg:"Profile created!",profile: this.profiles.createOne({user:user, name:"", content:"" })};
+    return {msg:"Profile created!",profile: this.profiles.createOne({user:user, name:"", content:"",features:{imageCaptioning:true,speech:true}})};
   }
 
   async update(user: ObjectId, update:Partial<ProfileDoc>)
